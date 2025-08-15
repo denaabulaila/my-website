@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ورشة عمل Wireshark التفاعلية</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .navigation {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #2c3e50;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .content-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            min-height: 500px;
+        }
+
+        .topic-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .topic-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .topic-title {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .topic-content {
+            line-height: 1.8;
+            color: #444;
+        }
+
+        .topic-content h3 {
+            color: #667eea;
+            margin: 25px 0 15px 0;
+            font-size: 1.3em;
+        }
+
+        .topic-content h4 {
+            color: #764ba2;
+            margin: 20px 0 10px 0;
+            font-size: 1.1em;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-right: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+
+        .code-box {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .steps-list {
+            counter-reset: step-counter;
+        }
+
+        .steps-list li {
+            counter-increment: step-counter;
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+            border-right: 4px solid #667eea;
+            position: relative;
+        }
+
+        .steps-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            right: -15px;
+            top: 15px;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .interactive-demo {
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .demo-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #856404;
+        }
+
+        .warning {
+            background: #f8d7da;
+            border: 1px solid #f1aeb5;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content-area {
+                padding: 25px;
+            }
+            
+            .navigation {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ورشة عمل Wireshark التفاعلية</h1>
+            <p>دليل شامل لتعلم تحليل الشبكات وحزم البيانات</p>
+        </div>
+
+        <div class="navigation">
+            <button class="nav-btn active" onclick="showTopic('intro')">مقدمة Wireshark</button>
+            <button class="nav-btn" onclick="showTopic('basics')">أساسيات الشبكات</button>
+            <button class="nav-btn" onclick="showTopic('installation')">التثبيت والإعداد</button>
+            <button class="nav-btn" onclick="showTopic('capturing')">التقاط الحزم</button>
+            <button class="nav-btn" onclick="showTopic('analysis')">تحليل الحزم</button>
+            <button class="nav-btn" onclick="showTopic('filters')">المرشحات المتقدمة</button>
+            <button class="nav-btn" onclick="showTopic('extraction')">استخراج البيانات</button>
+            <button class="nav-btn" onclick="showTopic('cases')">حالات عملية</button>
+            <button class="nav-btn" onclick="showTopic('tips')">نصائح وحيل</button>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 11%"></div>
+        </div>
+
+        <div class="content-area">
+            <!-- Topic 1: Introduction -->
+            <div class="topic-section active" id="intro">
+                <h2 class="topic-title">١. مقدمة حول Wireshark</h2>
+                <div class="topic-content">
+                    <h3>ما هو Wireshark ولماذا نستخدمه؟</h3>
+                    <p>Wireshark هو أداة مجانية ومفتوحة المصدر لتحليل بروتوكولات الشبكة. يُعتبر المعيار الذهبي في مجال تحليل الشبكات ويستخدمه محترفو الشبكات ومتخصصو الأمن السيبراني حول العالم.</p>
+                    
+                    <div class="highlight-box">
+                        <h4>الاستخدامات الرئيسية:</h4>
+                        <ul>
+                            <li>استكشاف وإصلاح مشاكل الشبكة</li>
+                            <li>تحليل أمان الشبكة</li>
+                            <li>تطوير وتصحيح تطبيقات الشبكة</li>
+                            <li>التعلم وفهم بروتوكولات الشبكة</li>
+                            <li>مراقبة أداء الشبكة</li>
+                        </ul>
+                    </div>
+
+                    <h3>الفرق بين Wireshark وأدوات تحليل الشبكات الأخرى</h3>
+                    <div class="highlight-box">
+                        <h4>مميزات Wireshark:</h4>
+                        <ul>
+                            <li><strong>واجهة رسومية سهلة الاستخدام:</strong> على عكس أدوات سطر الأوامر مثل tcpdump</li>
+                            <li><strong>دعم أكثر من 3000 بروتوكول:</strong> أوسع دعم متاح في السوق</li>
+                            <li><strong>مرشحات متقدمة:</strong> نظام ترشيح قوي ومرن</li>
+                            <li><strong>مجاني ومفتوح المصدر:</strong> لا توجد قيود ترخيص</li>
+                            <li><strong>متعدد المنصات:</strong> Windows, Linux, macOS</li>
+                        </ul>
+                    </div>
+
+                    <h3>أهمية تحليل الحزم في الشبكات والأمن السيبراني</h3>
+                    <p>تحليل حزم البيانات يوفر نظرة عميقة على ما يحدث داخل الشبكة، مما يمكن من:</p>
+                    <ul>
+                        <li>اكتشاف الهجمات السيبرانية والتهديدات</li>
+                        <li>تحديد اختناقات الأداء</li>
+                        <li>فهم سلوك التطبيقات</li>
+                        <li>التحقق من صحة التكوينات</li>
+                        <li>تجميع الأدلة في التحقيقات الرقمية</li>
+                    </ul>
+
+                    <div class="interactive-demo">
+                        <h4>🔍 تجربة تفاعلية</h4>
+                        <p>انقر على الزر أدناه لمشاهدة مثال على واجهة Wireshark</p>
+                        <button class="demo-btn" onclick="showDemo('wireshark-interface')">عرض واجهة Wireshark</button>
+                        <div id="demo-wireshark-interface" style="display:none; margin-top: 20px;">
+                            <div class="code-box">
+                                📊 واجهة Wireshark الرئيسية تتكون من:
+                                ├── شريط القوائم (File, Edit, View, Go, Capture...)
+                                ├── شريط الأدوات (أزرار البدء والإيقاف)
+                                ├── مرشح العرض (Display Filter)
+                                ├── قائمة الحزم (Packet List)
+                                ├── تفاصيل الحزمة (Packet Details)
+                                └── البيانات السادسة عشرية (Packet Bytes)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic 2: Network Basics -->
+            <div class="topic-section" id="basics">
+                <h2 class="topic-title">٢. أساسيات الشبكات الضرورية</h2>
+                <div class="topic-content">
+                    <h3>مراجعة سريعة للمفاهيم الأساسية</h3>
+                    
+                    <h4>عناوين IP (Internet Protocol)</h4>
+                    <div class="highlight-box">
+                        <p><strong>IPv4:</strong> عناوين 32 بت (مثل 192.168.1.1)</p>
+                        <p><strong>IPv6:</strong> عناوين 128 بت (مثل 2001:db8::1)</p>
+                        <p><strong>الاستخدام:</strong> تحديد الأجهزة على الشبكة بشكل فريد</p>
+                    </div>
+
+                    <h4>عناوين MAC (Media Access Control)</h4>
+                    <div class="highlight-box">
+                        <p><strong>الطول:</strong> 48 بت (6 بايت)</p>
+                        <p><strong>المثال:</strong> 00:11:22:33:44:55</p>
+                        <p><strong>الاستخدام:</strong> تحديد بطاقات الشبكة فيزيائياً</p>
+                    </div>
+
+                    <h4>بروتوكول TCP (Transmission Control Protocol)</h4>
+                    <div class="highlight-box">
+                        <p><strong>الخصائص:</strong> موثوق، متصل، مضمون التسليم</p>
+                        <p><strong>الاستخدامات:</strong> HTTP, HTTPS, FTP, SSH</p>
+                        <p><strong>المنافذ الشائعة:</strong> 80 (HTTP), 443 (HTTPS), 22 (SSH)</p>
+                    </div>
+
+                    <h4>بروتوكول UDP (User Datagram Protocol)</h4>
+                    <div class="highlight-box">
+                        <p><strong>الخصائص:</strong> سريع، بدون اتصال، غير مضمون التسليم</p>
+                        <p><strong>الاستخدامات:</strong> DNS, DHCP, البث المباشر</p>
+                        <p><strong>المنافذ الشائعة:</strong> 53 (DNS), 67/68 (DHCP)</p>
+                    </div>
+
+                    <h4>نظام أسماء النطاقات DNS</h4>
+                    <div class="highlight-box">
+                        <p><strong>الوظيفة:</strong> تحويل أسماء المواقع إلى عناوين IP</p>
+                        <p><strong>المثال:</strong> google.com → 142.250.190.78</p>
+                        <p><strong>المنفذ:</strong> 53 (UDP/TCP)</p>
+                    </div>
+
+                    <h4>بروتوكول HTTP/HTTPS</h4>
+                    <div class="highlight-box">
+                        <p><strong>HTTP:</strong> منفذ 80، غير مشفر</p>
+                        <p><strong>HTTPS:</strong> منفذ 443، مشفر بـ SSL/TLS</p>
+                        <p><strong>الطرق:</strong> GET, POST, PUT, DELETE</p>
+                    </div>
+
+                    <h3>نموذج OSI والطبقات المهمة للتحليل</h3>
+                    <div class="steps-list">
+                        <ol style="list-style: none;">
+                            <li><strong>الطبقة الفيزيائية (Physical):</strong> الإشارات والكابلات</li>
+                            <li><strong>طبقة ربط البيانات (Data Link):</strong> إطارات Ethernet وعناوين MAC</li>
+                            <li><strong>طبقة الشبكة (Network):</strong> عناوين IP والتوجيه</li>
+                            <li><strong>طبقة النقل (Transport):</strong> TCP/UDP والمنافذ</li>
+                            <li><strong>طبقة الجلسة (Session):</strong> إدارة الجلسات</li>
+                            <li><strong>طبقة العرض (Presentation):</strong> التشفير والضغط</li>
+                            <li><strong>طبقة التطبيق (Application):</strong> HTTP, FTP, SSH</li>
+                        </ol>
+                    </div>
+
+                    <div class="interactive-demo">
+                        <h4>🧪 مثال تفاعلي: هيكل الحزمة</h4>
+                        <button class="demo-btn" onclick="showDemo('packet-structure')">عرض هيكل الحزمة</button>
+                        <div id="demo-packet-structure" style="display:none; margin-top: 20px;">
+                            <div class="code-box">
+[Ethernet Header]
+Destination MAC: 00:11:22:33:44:55
+Source MAC: AA:BB:CC:DD:EE:FF
+Type: IPv4 (0x0800)
+
+[IP Header]
+Version: 4
+Source IP: 192.168.1.100
+Destination IP: 8.8.8.8
+Protocol: TCP (6)
+
+[TCP Header]
+Source Port: 49152
+Destination Port: 80
+Flags: [SYN]
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic 3: Installation -->
+            <div class="topic-section" id="installation">
+                <h2 class="topic-title">٣. تثبيت Wireshark والإعدادات الأساسية</h2>
+                <div class="topic-content">
+                    <h3>تحميل وتثبيت Wireshark</h3>
+                    
+                    <h4>🖥️ نظام Windows</h4>
+                    <div class="steps-list">
+                        <ol>
+                            <li>اذهب إلى <strong>wireshark.org</strong></li>
+                            <li>اختر "Download" ثم "Windows Installer"</li>
+                            <li>قم بتشغيل ملف التثبيت كمسؤول</li>
+                            <li>اتبع معالج التثبيت واقبل الإعدادات الافتراضية</li>
+                            <li>تأكد من تثبيت WinPcap أو Npcap</li>
+                        </ol>
+                    </div>
+
+                    <h4>🐧 نظام Linux (Ubuntu/Debian)</h4>
+                    <div class="code-box">
+# تحديث قائمة الحزم
+sudo apt update
+
+# تثبيت Wireshark
+sudo apt install wireshark
+
+# إضافة المستخدم لمجموعة wireshark
+sudo usermod -aG wireshark $USER
+
+# إعادة تسجيل الدخول أو تشغيل:
+newgrp wireshark
+                    </div>
+
+                    <h4>🍎 نظام macOS</h4>
+                    <div class="steps-list">
+                        <ol>
+                            <li>قم بتحميل ملف .dmg من الموقع الرسمي</li>
+                            <li>اسحب Wireshark إلى مجلد Applications</li>
+                            <li>قم بتثبيت ChmodBPF لصلاحيات التقاط الحزم</li>
+                            <li>أعد تشغيل النظام</li>
+                        </ol>
+                    </div>
+
+                    <h3>اختيار واجهة الشبكة الصحيحة</h3>
+                    <div class="highlight-box">
+                        <h4>أنواع الواجهات:</h4>
+                        <ul>
+                            <li><strong>Ethernet (eth0, ens33):</strong> اتصال سلكي</li>
+                            <li><strong>WiFi (wlan0, wlp2s0):</strong> اتصال لاسلكي</li>
+                            <li><strong>Loopback (lo):</strong> حركة البيانات المحلية</li>
+                            <li><strong>USB/Bluetooth:</strong> اتصالات خاصة</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert">
+                        <strong>تنبيه:</strong> في الشبكات المحولة (Switched Networks)، ستحتاج إلى تكوين خاص لرؤية حركة بيانات الأجهزة الأخرى مثل Port Mirroring أو Network TAPs.
+                    </div>
+
+                    <h3>تكوين مرشحات التقاط</h3>
+                    <div class="highlight-box">
+                        <h4>أمثلة على مرشحات التقاط:</h4>
+                        <div class="code-box">
+# التقاط HTTP فقط
+tcp port 80
+
+# التقاط DNS فقط
+udp port 53
+
+# التقاط حركة بيانات من/إلى خادم معين
+host 192.168.1.100
+
+# التقاط حركة بيانات شبكة فرعية
+net 192.168.1.0/24
+
+# استبعاد حركة SSH
+not tcp port 22
+                        </div>
+                    </div>
+
+                    <div class="interactive-demo">
+                        <h4>⚙️ محاكي إعدادات التقاط</h4>
+                        <button class="demo-btn" onclick="showDemo('capture-settings')">فتح إعدادات التقاط</button>
+                        <div id="demo-capture-settings" style="display:none; margin-top: 20px;">
+                            <div class="highlight-box">
+                                <h4>إعدادات التقاط الموصى بها للمبتدئين:</h4>
+                                <ul>
+                                    <li>✅ واجهة الشبكة: WiFi أو Ethernet النشطة</li>
+                                    <li>✅ مرشح التقاط: فارغ (لرؤية كل شيء)</li>
+                                    <li>✅ حجم الملف: 100 MB كحد أقصى</li>
+                                    <li>✅ الوقت: 5 دقائق كحد أقصى</li>
+                                    <li>✅ حفظ تلقائي: نعم</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="warning">
+                        <strong>تحذير أمني:</strong> تأكد من حصولك على الإذن قبل تحليل حركة بيانات الشبكة. استخدام Wireshark بدون إذن قد يخالف سياسات الشركة أو القانون.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic 4: Capturing -->
+            <div class="topic-section" id="capturing">
+                <h2 class="topic-title">٤. التقاط الحزم (Packet Capturing)</h2>
+                <div class="topic-content">
+                    <h3>كيفية بدء وإيقاف التقاط الحزم</h3>
+                    
+                    <div class="steps-list">
+                        <ol>
+                            <li><strong>بدء التقاط:</strong>
+                                <ul>
+                                    <li>اختر واجهة الشبكة من القائمة الرئيسية</li>
+                                    <li>انقر على أيقونة "Start" (زر التشغيل الأزرق)</li>
+                                    <li>أو استخدم اختصار Ctrl+E</li>
+                                </ul>
+                            </li>
+                            <li><strong>إيقاف التقاط:</strong>
+                                <ul>
+                                    <li>انقر على أيقونة "Stop" (المربع الأحمر)</li>
+                                    <li>أو استخدم اختصار Ctrl+E</li>
+                                    <li>أو من قائمة Capture → Stop</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <h3>الفرق بين مرشح التقاط ومرشح العرض</h3>
+                    
+                    <div class="highlight-box">
+                        <h4>🎯 مرشح التقاط (Capture Filter)</h4>
+                        <ul>
+                            <li><strong>الوقت:</strong> يُطبق أثناء التقاط الحزم</li>
+                            <li><strong>الغرض:</strong> تقليل كمية البيانات المُلتقطة</li>
+                            <li><strong>الصيغة:</strong> BPF (Berkeley Packet Filter)</li>
+                            <li><strong>المثال:</strong> tcp port 80</li>
+                            <li><strong>الفائدة:</strong> توفير مساحة التخزين والذاكرة</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>🔍 مرشح العرض (Display Filter)</h4>
+                        <ul>
+                            <li><strong>الوقت:</strong> يُطبق بعد التقاط الحزم</li>
+                            <li><strong>الغرض:</strong> إخفاء/إظهار حزم معينة من العرض</li>
+                            <li><strong>الصيغة:</strong> Wireshark Display Filter</li>
+                            <li><strong>المثال:</strong> http.request.method == "GET"</li>
+                            <li><strong>الفائدة:</strong> تحليل مرن للبيانات المُلتقطة</li>
+                        </ul>
+                    </div>
+
+                    <h3>أمثلة عملية للتقاط</h3>
+
+                    <h4>📡 التقاط حركة HTTP</h4>
+                    <div class="steps-list">
+                        <ol>
+                            <li>ضع مرشح التقاط: <code>tcp port 80</code></li>
+                            <li>ابدأ التقاط الحزم</li>
+                            <li>افتح متصفح الويب</li>
+                            <li>اذهب إلى موقع يستخدم HTTP (مثل http://neverssl.com)</li>
+                            <li>لاحظ الطلبات والاستجابات في Wireshark</li>
+                        </ol>
+                    </div>
+
+                    <h4>🌐 التقاط استعلامات DNS</h4>
+                    <div class="steps-list">
+                        <ol>
+                            <li>ضع مرشح التقاط: <code>udp port 53</code></li>
+                            <li>ابدأ التقاط الحزم</li>
+                            <li>افتح موجه الأوامر واكتب: <code>nslookup google.com</code></li>
+                            <li>راقب استعلامات DNS في Wireshark</li>
+                        </ol>
+                    </div>
+
+                    <h4>📍 التقاط حزم ARP</h4>
+                    <div class="steps-list">
+                        <ol>
+                            <li>ضع مرشح التقاط: <code>arp</code></li>
+                            <li>ابدأ التقاط الحزم</li>
+                            <li>في موجه الأوامر: <code>ping 192.168.1.1</code></li>
+                            <li>لاحظ استعلامات ARP للحصول على عنوان MAC</li>
+                        </ol>
+                    </div>
+
+                    <div class="interactive-demo">
+                        <h4>🎮 محاكي التقاط التفاعلي</h4>
+                        <button class="demo-btn" onclick="showDemo('capture-demo')">محاكاة التقاط HTTP</button>
+                        <div id="demo-capture-demo" style="display:none; margin-top: 20px;">
+                            <div class="code-box" id="capture-output">
+🟢 بدء التقاط الحزم...
+⏱️ الوقت: 0 ثانية - الحزم المُلتقطة: 0
+
+انقر على "محاكاة طلب HTTP" لرؤية الحزم
+                            </div>
+                            <button class="demo-btn" onclick="simulateHTTPRequest()">محاكاة طلب HTTP</button>
+                            <button class="demo-btn" onclick="simulateDNSQuery()">محاكاة استعلام DNS</button>
+                            <button class="demo-btn" onclick="clearCapture()">مسح النتائج</button>
+                        </div>
+                    </div>
+
+                    <div class="alert">
+                        <strong>نصيحة:</strong> ابدأ بمرشحات تقاط بسيطة ثم تدرج إلى المعقدة. الإفراط في الترشيح قد يؤدي إلى فقدان بيانات مهمة.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic 5: Packet Analysis -->
+            <div class="topic-section" id="analysis">
+                <h2 class="topic-title">٥. تحليل الحزم</h2>
+                <div class="topic-content">
+                    <h3>قراءة تفاصيل الحزمة والبايتات</h3>
+                    
+                    <div class="highlight-box">
+                        <h4>📊 المناطق الثلاثة الرئيسية في Wireshark:</h4>
+                        <ol>
+                            <li><strong>قائمة الحزم (Packet List):</strong> عرض موجز لجميع الحزم</li>
+                            <li><strong>تفاصيل الحزمة (Packet Details):</strong> تحليل مفصل للحزمة المحددة</li>
+                            <li><strong>البايتات (Packet Bytes):</strong> المحتوى الخام للحزمة</li>
+                        </ol>
+                    </div>
+
+                    <h4>🔍 فهم قائمة الحزم</h4>
+                    <div class="code-box">
+No. | Time | Source | Destination | Protocol | Length | Info
+1   | 0.000| 192.168.1.100 | 8.8.8.8 | DNS | 74 | Standard query A google.com
+2   | 0.045| 8.8.8.8 | 192.168.1.100 | DNS | 90 | Standard query response A 142.250.190.78
+                    </div>
+
+                    <h3>تتبع تدفقات TCP والمحادثات بين الأجهزة</h3>
+                    
+                    <div class="steps-list">
+                        <ol>
+                            <li><strong>تتبع تدفق TCP:</strong>
+                                <ul>
+                                    <li>انقر بالزر الأيمن على حزمة TCP</li>
+                                    <li>اختر "Follow" → "TCP Stream"</li>
+                                    <li>ستظهر نافذة تعرض المحادثة كاملة</li>
+                                </ul>
+                            </li>
+                            <li><strong>عرض الإحصائيات:</strong>
+                                <ul>
+                                    <li>اذهب إلى "Statistics" → "Conversations"</li>
+                                    <li>اختر تبويب "TCP" أو "UDP"</li>
+                                    <li>راقب كمية البيانات المتبادلة</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <h3>استخدام قواعد التلوين لتمييز البروتوكولات</h3>
+                    
+                    <div class="highlight-box">
+                        <h4>🎨 الألوان الافتراضية:</h4>
+                        <ul style="list-style: none;">
+                            <li>🟢 <strong>أخضر فاتح:</strong> HTTP</li>
+                            <li>🔵 <strong>أزرق فاتح:</strong> TCP</li>
+                            <li>🟡 <strong>أصفر:</strong> ICMP</li>
+                            <li>🟣 <strong>بنفسجي:</strong> UDP</li>
+                            <li>⚫ <strong>أسود:</strong> حزم بمشاكل أو أخطاء</li>
+                            <li>🔴 <strong>أحمر:</strong> RST, FIN أو مشاكل في الاتصال</li>
+                        </ul>
+                    </div>
+
+                    <h4>إنشاء قواعد تلوين مخصصة</h4>
+                    <div class="steps-list">
+                        <ol>
+                            <li>اذهب إلى "View" → "Coloring Rules"</li>
+                            <li>انقر على "+" لإضافة قاعدة جديدة</li>
+                            <li>أدخل الاسم ومرشح العرض</li>
+                            <li>اختر لون الخلفية والنص</li>
+                            <li>انقر "OK" لحفظ القاعدة</li>
+                        </ol>
+                    </div>
+
+                    <div class="interactive-demo">
+                        <h4>🧪 مثال تفاعلي: تحليل حزمة HTTP</h4>
+                        <button class="demo-btn" onclick="showDemo('packet-analysis')">تحليل حزمة GET</button>
+                        <div id="demo-packet-analysis" style="display:none; margin-top: 20px;">
+                            <div class="code-box">
+📦 تحليل حزمة HTTP GET:
+
+[Ethernet II Header]
+├── Destination: aa:bb:cc:dd:ee:ff
+├── Source: 11:22:33:44:55:66
+└── Type: IPv4 (0x0800)
+
+[Internet Protocol Version 4]
+├── Version: 4
+├── Header Length: 20 bytes
+├── Source: 192.168.1.100
+├── Destination: 93.184.216.34
+└── Protocol: TCP (6)
+
+[Transmission Control Protocol]
+├── Source Port: 54321
+├── Destination Port: 80
+├── Sequence Number: 1234567890
+├── Flags: PSH, ACK
+└── Window Size: 65535
+
+[Hypertext Transfer Protocol]
+├── GET /index.html HTTP/1.1
+├── Host: example.com
+├── User-Agent: Mozilla/5.0...
+└── Accept: text/html,application/xhtml+xml
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="warning">
+                        <strong>تذكر:</strong> عند تحليل الحزم، ابدأ من الطبقات السفلى (Ethernet) وانتقل للأعلى (Application) لفهم أفضل لهيكل البيانات.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic 6: Advanced Filters -->
+            <div class="topic-section" id="filters">
+                <h2 class="topic-title">٦. المرشحات المتقدمة</h2>
+                <div class="topic-content">
+                    <h3>مرشحات العرض المتقدمة</h3>
+                    
+                    <h4>🌐 مرشحات TCP</h4>
+                    <div class="code-box">
+# حزم TCP فقط
+tcp
+
+# اتصالات TCP على منفذ 80
+tcp.port == 80
+
+# حزم TCP مع علامة SYN
+tcp.flags.syn == 1
+
+# إعادة الإرسال TCP
+tcp.analysis.retransmission
+
+# نوافذ TCP صفر
+tcp.window_size == 0
+                    </div>
+
+                    <h4>📡 مرشحات UDP</h4>
+                    <div class="code-box">
+# حزم UDP فقط
+udp
+
+# DNS queries
+udp.port == 53
+
+# DHCP traffic
+udp.port == 67 or udp.port == 68
+
+# UDP checksum errors
+udp.checksum_bad
+                    </div>
+
+                    <h4>🌍 مرشحات HTTP</h4>
+                    <div class="code-box">
+# جميع حركة HTTP
+http
+
+# طلبات GET فقط
+http.request.method == "GET"
+
+# طلبات POST
+http.request.method == "POST"
+
+# ردود HTTP مع كود خطأ
+http.response.code >= 400
+
+# مواقع معينة
+http.host == "google.com"
+
+# ملفات الصور
+http.request.uri matches "\\.(jpg|png|gif)$"
+                    </div>
+
+                    <h4>🔍 مرشحات DNS</h4>
+                    <div class="code-box">
+# جميع حركة DNS
+dns
+
+# استعلامات DNS للنوع A
+dns.qry.type == 1
+
+# ردود DNS مع أخطاء
+dns.flags.rcode != 0
+
+# استعلامات لنطاق معين
+dns.qry.name contains "google"
+                    </div>
+
+                    <h4>📍 مرشحات ARP</h4>
+                    <div class="code-box">
+# جميع حركة ARP
+arp
+
+# طلبات ARP
+arp.opcode == 1
+
+# ردود ARP
+arp.opcode == 2
+
+# ARP لعنوان IP معين
+arp.dst.proto_ipv4 == 192.168.1.1
+                    </div>
+
+                    <h4>⚠️ مرشحات ICMP</h4>
+                    <div class="code-box">
+# جميع حركة ICMP
+icmp
+
+# Ping requests
+icmp.type == 8
+
+# Ping replies
+icmp.type == 0
+
+# ICMP unreachable messages
+icmp.type == 3
+                    </div>
+
+                    <h3>استخدام المرشحات لاكتشاف الحزم المشبوهة</h3>
+                    
+                    <div class="highlight-box">
+                        <h4>🚨 مرشحات الأمان</h4>
+                        <div class="code-box">
+# محاولات مسح المنافذ
+tcp.flags == 0x02 and tcp.window_size <= 1024
+
+# حزم TCP غير طبيعية
+tcp.flags == 0x00 or tcp.flags == 0x3f
+
+# محاولات ARP Spoofing المحتملة
+arp.duplicate-address-detected
+
+# حركة DNS مشبوهة
+dns.qry.name contains "dga" or dns.qry.name matches "^[a-z]{8,}\\."
+
+# اتصالات غير مشفرة لمواقع الدفع
+http.request.uri contains "payment" and not ssl
+                        </div>
+                    </div>
+
+                    <div class="interactive-demo">
+                        <h4>🛡️ مختبر اكتشاف التهديدات</h4>
+                        <button class="demo-btn" onclick="showDemo('threat-detection')">محاكاة اكتشاف التهديدات</button>
+                        <div id="demo-threat-detection" style="display:none; margin-top: 20px;">
+                            <div class="alert">
+                                <strong>سيناريوهات تهديد شائعة:</strong>
+                            </div>
+                            <div class="code-box" id="threat-output">
+انقر على أحد الأزرار أدناه لمحاكاة اكتشاف تهديد:
+                            </div>
+                            <button class="demo-btn" onclick="simulateThreat('portscan')">محاكاة مسح المنافذ</button>
+                            <button class="demo-btn" onclick="simulateThreat('arp-poison')">محاكاة ARP Poisoning</button>
+                            <button class="demo-btn" onclick="simulateThreat('dns-tunnel')">محاكاة DNS Tunneling</button>
+                        </div>
+                    </div>
+
+                    <h3>دمج المرشحات المتعددة</h3>
+                    <div class="highlight-box">
+                        <h4>عوامل المنطق:</h4>
+                        <ul>
+                            <li><strong>and (&&):</strong> كلا الشرطين يجب أن يكونا صحيحين</li>
+                            <li><strong>or (||):</strong> أحد الشرطين يجب أن يكون صحيحاً</li>
+                            <li><strong>not (!):</strong> نفي الشرط</li>
+                            <li><strong>الأقواس ():</strong> لتجميع الشروط</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-box">
+# مثال معقد: HTTP أو HTTPS من جهاز معين
+(http or ssl) and ip.src == 192.168.1.100
+
+# استبعاد حركة النسخ الاحتياطي
+not (tcp.port == 22 or tcp.port == 3389)
+
+# حركة مشبوهة في ساعات غير العمل
+(tcp.port == 135 or tcp.port == 445) and frame.time >= "22:00:00"
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic 7: Data Extraction -->
+            <div class="topic-section" id="extraction">
+                <h2 class="topic-title">٧. استخراج البيانات وإعداد التقارير</h2>
+                <div class="topic-content">
+                    <h3>تصدير الحزم</h3>
+                    
+                    <h4>💾 حفظ بصيغة PCAP</h4>
+                    <div class="steps-list">
+                        <ol>
+                            <li>اذهب إلى "File" → "Export Specified Packets"</li>
+                            <li>اختر نطاق الحزم المطلوب</li>
+                            <li>حدد مجلد الحفظ واسم الملف</li>
+                            <li>اختر صيغة "Wireshark/tcpdump (.pcap)"</li>
+                            <li>انقر "Save"</li>
+                        </ol>
+                    </div>
+
+                    <h4>📊 تصدير إلى CSV</h4>
+                    <div class="steps-list">
+                        <ol>
+                            <li>اذهب إلى "File" → "Export Packet Dissections"</li>
+                            <li>اختر "CSV (Comma Separated Values)"</li>
+                            <li>حدد الحقول المطلوبة في التصدير</li>
+                            <li>اختر نطاق الحزم (المرئية أو الكل)</li>
+                            <li>احفظ الملف</li>
+                        </ol>
+                    </div>
+
+                    <h3>إنشاء الإحصائيات</h3>
+                    
+                    <h4>📈 هرمية البروتوكولات</h4>
+                    <div class="steps-list">
+                        <ol>
+                            <li>اذهب إلى "Statistics" → "Protocol Hierarchy"</li>
+                            <li>راقب توزيع البروتوكولات</li>
+                            <li>لاحظ النسب المئوية لكل بروتوكول</li>
+                            <li>احفظ النتائج أو صدرها</li>
+                        </ol>
+                    </div>
+
+                    <h4>🗣️ المحادثات</h4>
+                    <div class="highlight-box">
+                        <p><strong>المسار:</strong> Statistics → Conversations</p>
+                        <p><strong>الفوائد:</strong></p>
+                        <ul>
+                            <li>تحديد أكثر الأجهزة نشاطاً</li>
+                            <li>معرفة استهلاك البيانات</li>
+                            <li>اكتشاف الاتصالات غير المعتادة</li>
+                        </ul>
+                    </div>
+
+                    <h4>🌐 نقاط الشبكة</h4>
+                    <div class="highlight-box">
+                        <p><strong>المسار:</strong> Statistics → Endpoints</p>
+                        <p><strong>المعلومات المتاحة:</strong></p>
+                        <ul>
+                            <li>عناوين IP النشطة</li>
+                            <li>كمية البيانات المرسلة والمستقبلة</li>
+                            <li>عدد الحزم لكل جهاز</li>
+                        </ul>
+                    </div>
+
+                    <h3>إنشاء الرسوم البيانية</h3>
+                    
+                    <div class="steps-list">
+                        <ol>
+                            <li><strong>رسم I/O البياني:</strong>
+                                <ul>
+                                    <li>Statistics → I/O Graph</li>
+                                    <li>يظهر حركة البيانات مع الوقت</li>
+                                    <li>يمكن تطبيق مرشحات مختلفة</li>
+                                </ul>
+                            </li>
+                            <li><strong>مخطط تدفق البيانات:</strong>
+                                <ul>
+                                    <li>Statistics → Flow Graph</li>
+                                    <li>يعرض تسلسل الرسائل بين الأجهزة</li>
+                                    <li>مفيد لفهم البروتوكولات</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <div class="interactive-demo">
+                        <h4>📊 مولد التقارير التفاعلي</h4>
+                        <button class="demo-btn" onclick="showDemo('report-generator')">إنشاء تقرير شامل</button>
+                        <div id="demo-report-generator" style="display:none; margin-top: 20px;">
+                            <div class="highlight-box">
+                                <h4>📋 تقرير تحليل الشبكة - نموذج</h4>
+                                <div class="code-box" style="text-align: right;">
+تاريخ التحليل: 15 أغسطس 2025
+مدة التقاط: 60 دقيقة
+إجمالي الحزم: 15,847
+
+🌐 توزيع البروتوكولات:
+├── HTTP: 45.2% (7,163 حزمة)
+├── HTTPS: 28.7% (4,548 حزمة)  
+├── DNS: 12.1% (1,917 حزمة)
+├── TCP: 8.9% (1,410 حزمة)
+└── أخرى: 5.1% (809 حزمة)
+
+🔝 أكثر الأجهزة نشاطاً:
+├── 192.168.1.100: 38.4% (6,085 حزمة)
+├── 192.168.1.1: 15.2% (2,409 حزمة)
+└── 8.8.8.8: 12.7% (2,013 حزمة)
+
+⚠️ ملاحظات أمنية:
+├── 3 محاولات اتصال فاشلة
+├── لا توجد أنشطة مشبوهة
+└── جميع الاتصالات الحساسة مشفرة
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic 8: Practical Cases -->
+            <div class="topic-section" id="cases">
+                <h2 class="topic-title">٨. حالات عملية وأمثلة</h2>
+                <div class="topic-content">
+                    <h3>تحليل تصفح الويب HTTP/HTTPS</h3>
+                    
+                    <div class="steps-list">
+                        <ol>
+                            <li><strong>إعداد التقاط HTTP:</strong>
+                                <ul>
+                                    <li>مرشح التقاط: <code>tcp port 80 or tcp port 443</code></li>
+                                    <li>ابدأ التقاط الحزم</li>
+                                    <li>افتح متصفح ويب</li>
+                                    <li>قم بزيارة مواقع HTTP و HTTPS</li>
+                                </ul>
+                            </li>
+                            <li><strong>التحليل:</strong>
+                                <ul>
+                                    <li>راقب طلبات GET و POST</li>
+                                    <li>تتبع ردود الخادم ورموز الحالة</li>
+                                    <li>فحص رؤوس HTTP</li>
+                                    <li>مقارنة HTTP المفتوح مع HTTPS المشفر</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <h3>اكتشاف هجمات ARP Spoofing</h3>
+                    
+                    <div class="highlight-box">
+                        <h4>🎯 علامات ARP Spoofing:</h4>
+                        <ul>
+                            <li>عدة ردود ARP لنفس عنوان IP</li>
+                            <li>تغييرات مفاجئة في جدول ARP</li>
+                            <li>عناوين MAC مكررة لعناوين IP مختلفة</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-box">
+# مرشحات اكتشاف ARP Spoofing
+arp.duplicate-address-detected
+arp.opcode == 2 and arp.src.hw_mac != eth.src
+                    </div>
+
+                    <h3>تحليل هجمات DNS Poisoning</h3>
+                    
+                    <div class="steps-list">
+                        <ol>
+                            <li><strong>إعداد المراقبة:</strong>
+                                <ul>
+                                    <li>مرشح: <code>dns</code></li>
+                                    <li>راقب استعلامات وردود DNS</li>
+                                </ul>
+                            </li>
+                            <li><strong>علامات التحذير:</strong>
+                                <ul>
+                                    <li>ردود DNS من مصادر غير متوقعة</li>
+                                    <li>عناوين IP غير صحيحة لمواقع معروفة</li>
+                                    <li>أوقات استجابة غير طبيعية</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <h3>تحليل حركة البريد الإلكتروني</h3>
+                    
+                    <h4>📧 بروتوكولات البريد الإلكتروني</h4>
+                    <div class="highlight-box">
+                        <ul>
+                            <li><strong>SMTP (منفذ 25/587/465):</strong> إرسال البريد</li>
+                            <li><strong>POP3 (منفذ 110/995):</strong> استلام البريد</li>
+                            <li><strong>IMAP (منفذ 143/993):</strong> إدارة البريد</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-box">
+# مرشحات البريد الإلكتروني
+tcp.port == 25 or tcp.port == 587 or tcp.port == 465  # SMTP
+tcp.port == 110 or tcp.port == 995  # POP3
+tcp.port == 143 or tcp.port == 993  # IMAP
+                    </div>
+
+                    <div class="interactive-demo">
+                        <h4>🕵️ مختبر الطب الشرعي الرقمي</h4>
+                        <button class="demo-btn" onclick="showDemo('forensics-lab')">بدء التحقيق</button>
+                        <div id="demo-forensics-lab" style="display:none; margin-top: 20px;">
+                            <div class="alert">
+                                <strong>سيناريو:</strong> تم اكتشاف نشاط مشبوه على الشبكة. قم بتحليل ملف PCAP التالي:
+                            </div>
+                            <div class="code-box">
+📂 ملف التحقيق: suspicious_activity.pcap
+⏰ الفترة الزمنية: 14:30 - 15:45
+🌐 الشبكة: 192.168.1.0/24
+
+النتائج الأولية:
+├── 🚨 محاولات فاشلة للدخول: 47
+├── 📍 عمليات مسح منافذ: 12 جهاز مستهدف  
+├── 🌐 استعلامات DNS مشبوهة: 23
+├── 📧 حركة SMTP غير مشفرة: تحتوي على بيانات حساسة
+└── 🔍 تحويل DNS لنطاقات خبيثة معروفة
+
+التوصية: حجب الجهاز 192.168.1.85 فوراً
+                            </div>
+                            <button class="demo-btn" onclick="generateReport()">إنشاء تقرير مفصل</button>
+                        </div>
+                    </div>
+
+                    <div class="warning">
+                        <strong>تذكر:</strong> عند إجراء التحقيقات الرقمية، احتفظ دائماً بنسخ من ملفات PCAP الأصلية وسجل جميع خطوات التحليل.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic 9: Tips and Tricks -->
+            <div class="topic-section" id="tips">
+                <h2 class="topic-title">٩. نصائح وحيل</h2>
+                <div class="topic-content">
+                    <h3>حفظ وإعادة فتح عمليات التقاط</h3>
+                    
+                    <div class="steps-list">
+                        <ol>
+                            <li><strong>حفظ التقاط الحالي:</strong>
+                                <ul>
+                                    <li>Ctrl+S أو File → Save</li>
+                                    <li>اختر مكان الحفظ واسم الملف</li>
+                                    <li>الصيغة الافتراضية: .pcapng</li>
+                                </ul>
+                            </li>
+                            <li><strong>حفظ تلقائي:</strong>
+                                <ul>
+                                    <li>Capture → Options</li>
+                                    <li>فعل "Use multiple files"</li>
+                                    <li>حدد حجم الملف أو المدة الزمنية</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <h3>استخدام Wireshark مع أدوات أخرى</h3>
+                    
+                    <h4>🔧 tshark (سطر الأوامر)</h4>
+                    <div class="code-box">
+# التقاط وحفظ مباشرة
+tshark -i eth0 -w capture.pcap
+
+# تحليل ملف موجود
+tshark -r capture.pcap -Y "http.request.method==GET"
+
+# إحصائيات سريعة
+tshark -r capture.pcap -z conv,tcp
+
+# تصدير معلومات محددة
+tshark -r capture.pcap -T fields -e ip.src -e ip.dst
+                    </div>
+
+                    <h4>🐧 tcpdump (Linux/Unix)</h4>
+                    <div class="code-box">
+# التقاط أساسي
+sudo tcpdump -i eth0 -w capture.pcap
+
+# التقاط مع مرشح
+sudo tcpdump -i eth0 host 192.168.1.1 -w filtered.pcap
+
+# عرض مباشر
+sudo tcpdump -i eth0 -n
+                    </div>
+
+                    <h3>تجنب مشاكل الخصوصية أثناء التقاط</h3>
+                    
+                    <div class="warning">
+                        <h4>⚖️ الاعتبارات القانونية والأخلاقية</h4>
+                        <ul>
+                            <li><strong>احصل على إذن كتابي</strong> قبل تحليل شبكة الشركة</li>
+                            <li><strong>لا تلتقط</strong> حركة بيانات الشبكات التي لا تملكها</li>
+                            <li><strong>احم البيانات الحساسة</strong> المُلتقطة</li>
+                            <li><strong>احذف الملفات</strong> بعد انتهاء التحليل</li>
+                            <li><strong>اتبع سياسات الشركة</strong> والقوانين المحلية</li>
+                        </ul>
+                    </div>
+
+                    <h3>نصائح متقدمة للأداء</h3>
+                    
+                    <div class="highlight-box">
+                        <h4>🚀 تحسين الأداء</h4>
+                        <ul>
+                            <li><strong>استخدم مرشحات التقاط:</strong> قلل من البيانات المُلتقطة</li>
+                            <li><strong>زد حجم البافر:</strong> Edit → Preferences → Capture</li>
+                            <li><strong>استخدم SSD:</strong> لحفظ ملفات PCAP الكبيرة</li>
+                            <li><strong>أغلق البرامج غير الضرورية:</strong> وفر ذاكرة النظام</li>
+                        </ul>
+                    </div>
+
+                    <h3>اختصارات لوحة المفاتيح المفيدة</h3>
+                    
+                    <div class="code-box">
+الاختصارات الأساسية:
+├── Ctrl+E: بدء/إيقاف التقاط
+├── Ctrl+R: إعادة تشغيل التقاط
+├── Ctrl+O: فتح ملف
+├── Ctrl+S: حفظ الملف
+├── Ctrl+F: البحث في الحزم
+├── Ctrl+G: الانتقال لحزمة برقم محدد
+├── Ctrl+↑/↓: الانتقال بين الحزم
+└── F3: البحث التالي
+
+مرشحات سريعة:
+├── Ctrl+/: تطبيق مرشح العرض
+├── Ctrl+\: إزالة مرشح العرض  
+├── Alt+←/→: التنقل في تاريخ المرشحات
+└── Escape: إلغاء المرشح الحالي
+
+عرض وتحليل:
+├── Ctrl++: تكبير الخط
+├── Ctrl+-: تصغير الخط
+├── Ctrl+0: استعادة الحجم الأصلي
+├── F5: تحديث العرض
+└── F11: ملء الشاشة
+                    </div>
+
+                    <h3>إعدادات مفيدة للمبتدئين</h3>
+                    
+                    <div class="steps-list">
+                        <ol>
+                            <li><strong>تخصيص الأعمدة:</strong>
+                                <ul>
+                                    <li>انقر بالزر الأيمن على رأس العمود</li>
+                                    <li>اختر "Column Preferences"</li>
+                                    <li>أضف أعمدة مثل "Source Port" و "Dest Port"</li>
+                                </ul>
+                            </li>
+                            <li><strong>حفظ التخطيط:</strong>
+                                <ul>
+                                    <li>رتب النوافذ كما تريد</li>
+                                    <li>اذهب لـ View → Save Layout</li>
+                                    <li>أعط التخطيط اسماً مميزاً</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <div class="interactive-demo">
+                        <h4>🎓 اختبار سريع - تقييم المعرفة</h4>
+                        <button class="demo-btn" onclick="showDemo('knowledge-test')">بدء الاختبار</button>
+                        <div id="demo-knowledge-test" style="display:none; margin-top: 20px;">
+                            <div class="highlight-box">
+                                <h4>📝 أسئلة المراجعة:</h4>
+                                <div id="quiz-content">
+                                    <p><strong>السؤال 1:</strong> ما هو الفرق بين مرشح التقاط ومرشح العرض؟</p>
+                                    <button class="demo-btn" onclick="showAnswer(1)">إظهار الإجابة</button>
+                                    <div id="answer-1" style="display:none;">
+                                        <div class="alert">
+                                            <strong>الإجابة:</strong> مرشح التقاط يُطبق أثناء التقاط الحزم ويقلل البيانات المُلتقطة، بينما مرشح العرض يُطبق بعد التقاط ويخفي/يظهر حزم معينة من العرض دون حذفها.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>موارد إضافية للتعلم</h3>
+                    
+                    <div class="highlight-box">
+                        <h4>📚 مصادر التعلم المقترحة:</h4>
+                        <ul>
+                            <li><strong>الموقع الرسمي:</strong> wireshark.org/docs/</li>
+                            <li><strong>كتب مفيدة:</strong> "Wireshark Network Analysis" by Laura Chappell</li>
+                            <li><strong>مجتمعات:</strong> ask.wireshark.org</li>
+                            <li><strong>دورات أونلاين:</strong> Coursera, Udemy</li>
+                            <li><strong>يوتيوب:</strong> قنوات تعليمية متخصصة</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert">
+                        <strong>نصيحة أخيرة:</strong> أفضل طريقة لتعلم Wireshark هي الممارسة العملية. ابدأ بتحليل حركة بيانات شبكتك الخاصة واستكشف الميزات تدريجياً.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="copyright">
+            <p>© جميع الحقوق محفوظة - د. دينا أبو ليلى</p>
+            <p>ورشة عمل Wireshark التفاعلية - 2025</p>
+        </div>
+    </div>
+
+    <script>
+        let currentTopic = 'intro';
+        let captureCounter = 0;
+        let quizAnswers = {};
+
+        function showTopic(topicId) {
+            // Hide all topics
+            const topics = document.querySelectorAll('.topic-section');
+            topics.forEach(topic => {
+                topic.classList.remove('active');
+            });
+
+            // Show selected topic
+            document.getElementById(topicId).classList.add('active');
+
+            // Update navigation
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update progress
+            const topicOrder = ['intro', 'basics', 'installation', 'capturing', 'analysis', 'filters', 'extraction', 'cases', 'tips'];
+            const progress = ((topicOrder.indexOf(topicId) + 1) / topicOrder.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+
+            currentTopic = topicId;
+        }
+
+        function showDemo(demoId) {
+            const demoElement = document.getElementById('demo-' + demoId);
+            if (demoElement) {
+                demoElement.style.display = demoElement.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        function simulateHTTPRequest() {
+            const output = document.getElementById('capture-output');
+            if (output) {
+                captureCounter++;
+                output.innerHTML = `
+🟢 التقاط نشط...
+⏱️ الوقت: ${captureCounter * 2} ثانية - الحزم المُلتقطة: ${captureCounter * 3}
+
+📦 حزمة جديدة مُلتقطة:
+${Date.now()} | 192.168.1.100 → 93.184.216.34 | HTTP | GET /index.html
+${Date.now() + 50} | 93.184.216.34 → 192.168.1.100 | HTTP | 200 OK (text/html)
+                `;
+            }
+        }
+
+        function simulateDNSQuery() {
+            const output = document.getElementById('capture-output');
+            if (output) {
+                captureCounter++;
+                output.innerHTML = `
+🟢 التقاط نشط...
+⏱️ الوقت: ${captureCounter * 2} ثانية - الحزم المُلتقطة: ${captureCounter * 2}
+
+📦 حزمة DNS مُلتقطة:
+${Date.now()} | 192.168.1.100 → 8.8.8.8 | DNS | Standard query A google.com
+${Date.now() + 30} | 8.8.8.8 → 192.168.1.100 | DNS | Standard response A 142.250.190.78
+                `;
+            }
+        }
+
+        function clearCapture() {
+            const output = document.getElementById('capture-output');
+            if (output) {
+                captureCounter = 0;
+                output.innerHTML = `
+🔴 إيقاف التقاط...
+⏱️ الوقت: 0 ثانية - الحزم المُلتقطة: 0
+
+انقر على "محاكاة طلب HTTP" لرؤية الحزم
+                `;
+            }
+        }
+
+        function simulateThreat(threatType) {
+            const output = document.getElementById('threat-output');
+            const threats = {
+                'portscan': `
+🚨 تم اكتشاف مسح المنافذ!
+
+المصدر: 192.168.1.85
+الهدف: 192.168.1.0/24
+المنافذ المفحوصة: 22, 23, 80, 443, 3389
+النمط: SYN Scan
+الخطورة: متوسطة
+
+المرشح المستخدم: tcp.flags == 0x02 and tcp.window_size <= 1024
+                `,
+                'arp-poison': `
+🚨 تم اكتشاف ARP Poisoning!
+
+المهاجم المحتمل: 192.168.1.66 (MAC: aa:bb:cc:dd:ee:01)
+الضحية: 192.168.1.10 (MAC: 11:22:33:44:55:66)
+الهجوم: انتحال عنوان MAC للبوابة
+الخطورة: عالية
+
+المرشح المستخدم: arp.duplicate-address-detected
+                `,
+                'dns-tunnel': `
+🚨 تم اكتشاف DNS Tunneling!
+
+المصدر: 192.168.1.75
+الاستعلامات المشبوهة: 247 في الدقيقة
+النطاقات: [random-string].evil-domain.com
+حجم البيانات غير طبيعي: 512 بايت لكل استعلام
+الخطورة: عالية
+
+المرشح المستخدم: dns.qry.name matches "^[a-z0-9]{20,}\\."
+                `
+            };
+            
+            if (output && threats[threatType]) {
+                output.innerHTML = threats[threatType];
+            }
+        }
+
+        function generateReport() {
+            const output = document.getElementById('demo-forensics-lab');
+            if (output) {
+                const reportDiv = document.createElement('div');
+                reportDiv.className = 'code-box';
+                reportDiv.innerHTML = `
+📊 تقرير التحقيق الشامل
+════════════════════════════════
+
+🔍 ملخص التهديدات المكتشفة:
+├── IP الجاني الرئيسي: 192.168.1.85
+├── نوع الهجوم: Multi-stage Attack
+├── المدة: 75 دقيقة
+└── الخطورة: عالية جداً
+
+🎯 الأنشطة المكتشفة:
+1. مسح المنافذ (14:30-14:45)
+2. استغلال ثغرة SMB (14:50)
+3. تثبيت backdoor (15:10)
+4. استخراج البيانات (15:20-15:45)
+
+📋 التوصيات:
+✅ حجب IP المهاجم فوراً
+✅ فحص جميع الأجهزة المتأثرة
+✅ تغيير كلمات المرور
+✅ تطبيق التحديثات الأمنية
+✅ مراجعة سجلات النظام
+
+📎 الملفات المرفقة:
+├── evidence.pcap (15.3 MB)
+├── malware_sample.exe (hash: a1b2c3...)
+└── network_diagram.png
+                `;
+                output.appendChild(reportDiv);
+            }
+        }
+
+        function showAnswer(questionId) {
+            const answer = document.getElementById('answer-' + questionId);
+            if (answer) {
+                answer.style.display = answer.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        // Initialize with first topic
+        document.addEventListener('DOMContentLoaded', function() {
+            showTopic('intro');
+        });
+
+        // Add some interactive animations
+        document.querySelectorAll('.demo-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+            });
+        });
+
+        // Auto-scroll to content when switching topics
+        function smoothScrollToContent() {
+            document.querySelector('.content-area').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+        // Add smooth scrolling to all navigation buttons
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                setTimeout(smoothScrollToContent, 100);
+            });
+        });
+    </script>
+</body>
+</html>
+                
